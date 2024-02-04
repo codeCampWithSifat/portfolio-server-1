@@ -61,7 +61,7 @@ async function run() {
       const user = await userCollection.findOne(query);
       const isAdmin = user?.role === "admin";
       if (!isAdmin) {
-        return res.status(401).send({ message: "UnAuthorized" });
+        return res.status(403).send({ message: "UnAuthorized" });
       }
       next();
     };
@@ -137,11 +137,52 @@ async function run() {
       res.send(result);
     });
 
+    // menu related api
     app.get("/menu", async (req, res) => {
       const result = await menuCollection.find().toArray();
       res.send(result);
     });
 
+    app.get("/menu/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await menuCollection.findOne(query);
+      res.send(result);
+    });
+
+    app.post("/menu", verifyToken, verifyAdmin, async (req, res) => {
+      const data = req.body;
+      const result = await menuCollection.insertOne(data);
+      res.send(result);
+    });
+
+    app.delete("/menu/:id", verifyToken, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await menuCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    app.patch("/menu/:id", verifyToken, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const data = req.body;
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: {
+          name: data.name,
+          category: data.category,
+          price: data.price,
+          recipe: data.recipe,
+          image: data.image,
+        },
+      };
+      // Update the first document that matches the filter
+      const result = await menuCollection.updateOne(filter, updateDoc, options);
+      res.send(result);
+    });
+
+    //  reveiw related api
     app.get("/reviews", async (req, res) => {
       const result = await reviewsCollection.find().toArray();
       res.send(result);
